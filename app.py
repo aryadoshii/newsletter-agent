@@ -229,34 +229,93 @@ if st.session_state["is_generating"]:
     st.markdown(f"### Generating your newsletter about **{topic}**…")
 
     stepper_placeholder = st.empty()
-    chat_placeholder = st.empty()
+    with stepper_placeholder.container():
+        render_agent_stepper(st.session_state["agent_statuses"])
 
-    # Polling loop — updates until pipeline completes
-    max_polls = 180   # 6 minutes at 2-second intervals
-    for poll_idx in range(max_polls):
-        agent_statuses, session_status, logs = _sync_agent_statuses(session_id)
-        st.session_state["agent_statuses"] = agent_statuses
+    # Show the user prompt bubble
+    for msg in st.session_state["messages"]:
+        if msg.get("role") == "user":
+            with st.chat_message("user"):
+                st.write(msg["content"])
 
-        _append_log_messages(logs)
+    # ── Live SSE streaming ────────────────────────────────────────────────
+    agent_placeholders: dict[str, st.delta_generator.DeltaGenerator] = {}
+    agent_buffers: dict[str, str] = {}
 
-        with stepper_placeholder.container():
-            render_agent_stepper(agent_statuses)
+    session_status = "running"
+    try:
+        with requests.get(
+            f"http://localhost:8000/api/stream/{session_id}",
+            stream=True,
+            timeout=360,
+        ) as resp:
+            for raw_line in resp.iter_lines():
+                if not raw_line:
+                    continue
+                line = raw_line.decode("utf-8") if isinstance(raw_line, bytes) else raw_line
+                if not line.startswith("data: "):
+                    continue
+                payload = line[6:]  # strip "data: "
 
-        with chat_placeholder.container():
-            render_chat_interface(st.session_state["messages"])
+                if payload == "[DONE]":
+                    break
 
-        if session_status in ("complete", "failed"):
-            break
+                if "|||" not in payload:
+                    continue
+                agent_raw, token = payload.split("|||", 1)
+                token = token.replace("\\n", "\n")
 
-        time.sleep(2)
+                # Map raw author → display name
+                display = {
+                    "news_searcher_1": "RESEARCH_TEAM",
+                    "news_searcher_2": "RESEARCH_TEAM",
+                    "research_team": "RESEARCH_TEAM",
+                    "content_filter": "CONTENT_FILTER",
+                    "newsletter_writer": "NEWSLETTER_WRITER",
+                    "html_formatter": "HTML_FORMATTER",
+                    "email_delivery": "EMAIL_DELIVERY",
+                }.get(agent_raw, agent_raw.upper())
 
-    # Pipeline finished — fetch newsletter HTML
-    if session_status == "complete":
+                if display not in agent_placeholders:
+                    # New agent container with badge
+                    with st.chat_message("assistant"):
+                        st.markdown(
+                            f'<span class="agent-badge">{display}</span>',
+                            unsafe_allow_html=True,
+                        )
+                        agent_placeholders[display] = st.empty()
+                    agent_buffers[display] = ""
+
+                agent_buffers[display] += token
+                agent_placeholders[display].markdown(agent_buffers[display])
+
+        session_status = "complete"
+    except Exception as exc:
+        session_status = "failed"
+        st.error(f"Streaming error: {exc}")
+
+    # Update stepper to all done
+    agent_statuses, session_status_db, logs = _sync_agent_statuses(session_id)
+    st.session_state["agent_statuses"] = agent_statuses
+    with stepper_placeholder.container():
+        render_agent_stepper(agent_statuses)
+
+    # Persist streamed messages into session for history
+    for display, text in agent_buffers.items():
+        st.session_state["messages"].append({
+            "role": "agent",
+            "content": text,
+            "agent_name": display,
+            "is_new": False,
+        })
+
+    # Fetch final newsletter HTML
+    if session_status_db == "complete" or session_status == "complete":
         try:
-            resp = requests.get(
+            resp2 = requests.get(
                 f"http://localhost:8000/api/newsletter/{session_id}", timeout=10
             )
-            newsletter = resp.json().get("newsletter", {})
+            newsletter = resp2.json().get("newsletter", {})
             html = newsletter.get("html_content", "")
             if html:
                 st.session_state["newsletter_html"] = html
