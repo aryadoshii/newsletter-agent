@@ -320,7 +320,7 @@ async def send_newsletter(session_id: int, request: SendRequest) -> dict:
 
 
 @router.get("/health")
-async def health() -> dict:
+def health() -> dict:
     """Return API health and Composio connection status."""
     gmail_status = get_gmail_status()
     outlook_status = get_outlook_status()

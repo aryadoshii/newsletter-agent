@@ -181,7 +181,7 @@ if not st.session_state["is_generating"] and st.session_state["newsletter_html"]
                     "platform": "gmail",
                     "length": length,
                 },
-                timeout=10,
+                timeout=30,
             )
             if not resp.ok:
                 # Show the exact error from the API (e.g. missing API keys)
