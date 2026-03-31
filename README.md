@@ -361,6 +361,6 @@ Run `uvicorn main:app --reload --port 8001` and update `API_BASE_URL` in `config
 
 <div align="center">
 
-Made with ❤️ powered by **[Qubrid AI](https://qubrid.com)**
+Made with ❤️ by **[Qubrid AI](https://qubrid.com)**
 
 </div>
