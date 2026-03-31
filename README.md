@@ -343,18 +343,6 @@ newsletter-agent/
 
 ---
 
-## 🔑 Environment Variables
-
-| Variable | Description | Required |
-|---|---|---|
-| `QUBRID_API_KEY` | Qubrid AI API key | ✅ |
-| `QUBRID_BASE_URL` | Qubrid AI endpoint (e.g. `https://api.qubrid.com/v1`) | ✅ |
-| `COMPOSIO_API_KEY` | Composio API key | ✅ |
-| `COMPOSIO_ENTITY_ID` | Composio entity ID (`default`) | ✅ |
-| `TAVILY_API_KEY` | Tavily search API key | ✅ |
-
----
-
 ## 🛠️ Troubleshooting
 
 **Email lands in Spam?**
@@ -368,12 +356,6 @@ Verify your `QUBRID_API_KEY` has sufficient credits at [app.qubrid.com](https://
 
 **Port 8000 already in use?**
 Run `uvicorn main:app --reload --port 8001` and update `API_BASE_URL` in `config/settings.py`.
-
----
-
-## 👤 Author
-
-**Arya Doshi** — [github.com/aryadoshii](https://github.com/aryadoshii)
 
 ---
 
