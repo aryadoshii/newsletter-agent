@@ -134,6 +134,7 @@ def render_input_panel() -> dict:
                 format_func=lambda x: {"short": "Short (3 stories)", "medium": "Medium (5 stories)", "long": "Long (7 stories)"}[x],
                 index=1,
                 key="input_length",
+                horizontal=True,
             )
 
         st.markdown("<br/>", unsafe_allow_html=True)
@@ -531,50 +532,50 @@ def _load_session(session_id: int) -> None:
         status_resp.raise_for_status()
         status_data = status_resp.json()
         sess = status_data.get("session", {})
-        logs = status_data.get("agent_logs", [])
+        status = sess.get("status", "running")
 
         st.session_state["session_id"] = session_id
         st.session_state["topic"] = sess.get("topic", "")
         st.session_state["recipient"] = sess.get("recipient", "")
         st.session_state["platform"] = sess.get("platform", "gmail")
         st.session_state["newsletter_html"] = None
-        st.session_state["is_generating"] = False
 
-        if sess.get("status") == "failed":
+        if status == "running":
+            st.session_state["is_generating"] = True
+            st.rerun()
+            return
+
+        if status == "failed":
+            logs = status_data.get("agent_logs", [])
             error_logs: list[str] = []
             seen_errors: set[str] = set()
             for log in logs:
-                if log.get("status") != "error" or not log.get("output_summary"):
-                    continue
-                summary = log["output_summary"].strip()
-                if summary in seen_errors:
-                    continue
-                seen_errors.add(summary)
-                error_logs.append(summary)
-            detail = (
-                "\n".join(error_logs)
-                if error_logs
-                else "This session failed before newsletter HTML could be saved."
-            )
-            st.sidebar.error(
-                "This session failed before a newsletter was saved.\n\n"
-                f"{detail}"
-            )
+                if log.get("status") == "error" and log.get("output_summary"):
+                    summary = log["output_summary"].strip()
+                    if summary not in seen_errors:
+                        seen_errors.add(summary)
+                        error_logs.append(summary)
+            
+            detail = "\\n".join(error_logs) if error_logs else "No detailed logs found."
+            st.sidebar.error(f"Cannot load a failed session.\\n\\n**Error:** {detail}")
             return
 
+        # Status must be complete
         resp = requests.get(
             f"http://localhost:8000/api/newsletter/{session_id}", timeout=5
         )
+        if resp.status_code == 404:
+            st.sidebar.warning("Session is marked complete, but no newsletter HTML was found. It may have been deleted.")
+            return
+
         resp.raise_for_status()
         data = resp.json()
         newsletter = data.get("newsletter", {})
         if newsletter and newsletter.get("html_content"):
             st.session_state["newsletter_html"] = newsletter["html_content"]
+            st.session_state["is_generating"] = False
             st.rerun()
-
-        st.sidebar.warning(
-            "This session exists, but no newsletter HTML was saved for it."
-        )
+            
     except Exception as exc:
         st.sidebar.error(f"Could not load session: {exc}")
 
