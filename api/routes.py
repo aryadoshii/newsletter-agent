@@ -16,6 +16,7 @@ litellm.num_retries = 6
 litellm.retry_after = 15  # wait at least 15s before retrying a rate-limited request
 
 from fastapi import APIRouter, HTTPException, BackgroundTasks
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
 logger = logging.getLogger(__name__)
@@ -25,6 +26,10 @@ from database import db
 from tools.email_tools import get_gmail_status, get_outlook_status
 
 router = APIRouter()
+
+# In-memory queue per session_id for SSE streaming
+import asyncio
+_stream_queues: dict[int, asyncio.Queue] = {}
 
 
 def _flatten_exception_messages(exc: BaseException, seen: set[int] | None = None) -> list[str]:
@@ -162,24 +167,32 @@ async def _run_pipeline(session_id: int, request: GenerateRequest) -> None:
                 parts=[genai_types.Part(text=user_message)],
             ),
         ):
-            step_name = event_to_step.get(getattr(event, "author", ""))
-            if step_name:
-                if hasattr(event, "content") and event.content:
-                    text_parts = []
-                    for part in event.content.parts:
-                        if hasattr(part, "text") and part.text:
-                            text_parts.append(part.text)
-                    if not text_parts:
-                        continue
+            author = getattr(event, "author", "")
+            step_name = event_to_step.get(author)
 
-                    summary = " ".join(text_parts)[:150]
-                    db.complete_agent_log(log_ids[step_name], "done", summary)
+            # -- Emit partial text tokens for live streaming --
+            if hasattr(event, "content") and event.content:
+                for part in event.content.parts:
+                    if hasattr(part, "text") and part.text:
+                        chunk = part.text
+                        # Push to SSE queue if anyone is listening
+                        q = _stream_queues.get(session_id)
+                        if q:
+                            await q.put({"agent": author or step_name or "agent", "text": chunk})
 
-                    # Capture HTML from formatter
-                    if step_name == "html_formatter":
-                        full_text = " ".join(text_parts)
-                        if "<html" in full_text.lower() or "<!doctype" in full_text.lower():
-                            final_html = full_text
+                        if step_name:
+                            summary = chunk[:150]
+                            db.complete_agent_log(log_ids[step_name], "done", summary)
+
+                            # Capture HTML from formatter
+                            if step_name == "html_formatter":
+                                if "<html" in chunk.lower() or "<!doctype" in chunk.lower():
+                                    final_html += chunk
+
+        # Signal end of stream
+        q = _stream_queues.get(session_id)
+        if q:
+            await q.put(None)
 
         if not final_html:
             raise RuntimeError("Pipeline completed without generating newsletter HTML.")
