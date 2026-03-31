@@ -255,6 +255,11 @@ async def generate_newsletter(
         recipient=request.recipient,
         platform=request.platform,
     )
+    
+    # Pre-initialize SSE queue to avoid race condition where pipeline starts 
+    # and emits tokens before the frontend connects to /api/stream
+    _stream_queues[session_id] = asyncio.Queue()
+
     background_tasks.add_task(_run_pipeline, session_id, request)
     return {"session_id": session_id, "status": "running"}
 
@@ -324,3 +329,36 @@ async def health() -> dict:
         "gmail": gmail_status,
         "outlook": outlook_status,
     }
+
+
+@router.get("/stream/{session_id}")
+async def stream_pipeline(session_id: int):
+    """SSE endpoint — yields agent text tokens in real-time as they arrive."""
+    # Use pre-existing queue or create if missing (defensive)
+    if session_id not in _stream_queues:
+        _stream_queues[session_id] = asyncio.Queue()
+    q = _stream_queues[session_id]
+
+    async def event_generator():
+        try:
+            # Yield a start sentinel
+            yield "data: [START]\n\n"
+            while True:
+                item = await asyncio.wait_for(q.get(), timeout=120)
+                if item is None:          # sentinel → pipeline done
+                    yield "data: [DONE]\n\n"
+                    break
+                agent = item["agent"]
+                text = item["text"].replace("\n", "\\n")
+                yield f"data: {agent}|||{text}\n\n"
+        except asyncio.TimeoutError:
+            yield "data: [DONE]\n\n"
+        finally:
+            # We don't pop immediately, background task might still want to put None
+            pass
+
+    return StreamingResponse(
+        event_generator(),
+        media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+    )
