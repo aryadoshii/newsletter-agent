@@ -88,6 +88,12 @@ All models served through **[Qubrid AI](https://qubrid.com)** — GPT-4.1 and Cl
 
 ---
 
+### ✅ Inbox Delivery — Real-World Result
+<!-- Add screenshot -->
+<img src="frontend/assets/screenshot_mail_delivery.png" alt="Newsletter delivered in Gmail" width="100%" />
+
+---
+
 ### 📚 Session History Sidebar
 <!-- Add screenshot -->
 <img src="frontend/assets/screenshot_history.png" alt="Session history" width="50%" />
