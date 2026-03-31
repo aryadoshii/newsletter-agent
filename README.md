@@ -76,6 +76,12 @@ All models served through **[Qubrid AI](https://qubrid.com)** — GPT-4.1 and Cl
 
 ---
 
+### 📱 Newsletter Content — Detailed View
+<!-- Add screenshot -->
+<img src="frontend/assets/screenshot_newsletter.png" alt="Detailed newsletter content" width="100%" />
+
+---
+
 ### 📬 Delivery Panel — Send or Draft
 <!-- Add screenshot -->
 <img src="frontend/assets/screenshot_delivery.png" alt="Delivery panel" width="100%" />
