@@ -37,8 +37,8 @@ WRITER_MODEL: str = "anthropic/claude-sonnet-4-6"
 
 # ── App Metadata ──────────────────────────────────────────────────────────────
 APP_NAME: str = "NewsletterAgent"
-APP_TAGLINE: str = "Multi-agent intelligence · Real inbox delivery · Powered by Qubrid"
-BRAND_LINE: str = "Built with Google ADK · Qubrid AI · Composio"
+APP_TAGLINE: str = "Built with Google ADK · Qubrid AI · Composio"
+BRAND_LINE: str = "Multi-agent intelligence · Real inbox delivery · Powered by Qubrid"
 
 # ── File Paths ────────────────────────────────────────────────────────────────
 DB_PATH: str = "database/newsletter.db"
