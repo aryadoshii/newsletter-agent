@@ -54,9 +54,7 @@ def render_header() -> None:
             <p style="color: #A0522D; font-size: 1.15rem; font-weight: 500; margin-top: 5px; opacity: 0.9;">
                 {APP_TAGLINE}
             </p>
-            <p style="color: #666666; font-size: 0.85rem; font-weight: 400; font-family: monospace;">
-                {BRAND_LINE}
-            </p>
+            {f'<p style="color: #666666; font-size: 0.85rem; font-weight: 400; font-family: monospace;">{BRAND_LINE}</p>' if BRAND_LINE else ''}
         </div>
         """,
         unsafe_allow_html=True,
@@ -587,8 +585,7 @@ def render_footer() -> None:
     st.markdown(
         f"""
         <div class="app-footer">
-            <p><strong>NewsletterAgent</strong> — Research. Write. Deliver.</p>
-            <p>Built with Google ADK × Qubrid AI × Composio</p>
+            <p><strong>NewsletterAgent</strong> — Multi-agent intelligence · Real inbox delivery · Powered by Qubrid</p>
         </div>
         """,
         unsafe_allow_html=True,
