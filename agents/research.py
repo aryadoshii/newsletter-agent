@@ -1,13 +1,15 @@
 """
 agents/research.py
 
-Parallel research team: three ADK Agents run simultaneously, each using a
-different Qubrid-hosted model to spread load across separate rate-limit buckets.
-Each agent searches from a different angle — latest news, expert analysis, trends.
-Uses DuckDuckGo web search (works with any LLM, no extra API key needed).
+Two research agents run in PARALLEL using ADK's ParallelAgent:
+- news_agent_1: searches for latest news and breaking announcements
+- news_agent_2: searches for expert analysis and trends
+
+Both fire simultaneously, their outputs are merged, then passed to the Filter.
+The rest of the pipeline (Filter → Write → Format → Deliver) remains sequential.
 """
 
-from google.adk.agents import Agent, SequentialAgent  # type: ignore
+from google.adk.agents import Agent, ParallelAgent  # type: ignore
 from google.adk.models.lite_llm import LiteLlm  # type: ignore
 
 from config.settings import QUBRID_MODEL_GPT, QUBRID_API_KEY, QUBRID_BASE_URL, RESEARCH_PROMPT
@@ -19,32 +21,25 @@ qubrid_gpt = LiteLlm(
     api_base=QUBRID_BASE_URL
 )
 
-# ── Individual searchers ───────────────────────────────────────────────────────
+# ── Two parallel searchers ─────────────────────────────────────────────────────
 
 news_agent_1 = Agent(
     name="news_searcher_1",
     model=qubrid_gpt,
-    instruction=RESEARCH_PROMPT + "\n\nFocus on: latest news and announcements.",
+    instruction=RESEARCH_PROMPT + "\n\nFocus on: latest news and breaking announcements.",
     tools=[web_search_tool],
 )
 
 news_agent_2 = Agent(
     name="news_searcher_2",
     model=qubrid_gpt,
-    instruction=RESEARCH_PROMPT + "\n\nFocus on: expert analysis and opinions.",
+    instruction=RESEARCH_PROMPT + "\n\nFocus on: expert analysis, opinions, and future trends.",
     tools=[web_search_tool],
 )
 
-news_agent_3 = Agent(
-    name="news_searcher_3",
-    model=qubrid_gpt,
-    instruction=RESEARCH_PROMPT + "\n\nFocus on: trends and future outlook.",
-    tools=[web_search_tool],
-)
+# ── ParallelAgent — both searchers fire at the same time ──────────────────────
 
-# ── SequentialAgent — space out requests to avoid rate limits ─────────────────
-
-research_agent = SequentialAgent(
+research_agent = ParallelAgent(
     name="research_team",
-    sub_agents=[news_agent_1, news_agent_2, news_agent_3],
+    sub_agents=[news_agent_1, news_agent_2],
 )
