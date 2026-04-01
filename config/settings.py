@@ -18,9 +18,10 @@ QUBRID_API_KEY: str = os.getenv("QUBRID_API_KEY", "")
 QUBRID_BASE_URL: str = os.getenv("QUBRID_BASE_URL", "https://platform.qubrid.com/v1")
 # LiteLLM routes via Qubrid using double-prefix (LiteLLM strips first prefix,
 # Qubrid receives the real model name e.g. "openai/gpt-5.4")
-QUBRID_MODEL_GPT: str = os.getenv("QUBRID_MODEL_GPT", "openai/openai/gpt-5.4")
-QUBRID_MODEL_CLAUDE: str = os.getenv("QUBRID_MODEL_CLAUDE", "openai/anthropic/claude-sonnet-4-6")
-QUBRID_MODEL_GEMINI: str = os.getenv("QUBRID_MODEL_GEMINI", "openai/google/gemini-3-flash-preview")
+# Double-prefix: LiteLLM strips first "openai/" → Qubrid receives e.g. "openai/gpt-4.1"
+QUBRID_MODEL_GPT41: str = os.getenv("QUBRID_MODEL_GPT41", "openai/openai/gpt-4.1")
+# Claude via Qubrid: force OpenAI-compatible provider with custom_llm_provider="openai"
+QUBRID_MODEL_CLAUDE35: str = os.getenv("QUBRID_MODEL_CLAUDE35", "anthropic/claude-3-5-sonnet-20241022")
 COMPOSIO_API_KEY: str = os.getenv("COMPOSIO_API_KEY", "")
 COMPOSIO_MCP_URL: str = os.getenv("COMPOSIO_MCP_URL", "")
 COMPOSIO_ENTITY_ID: str = os.getenv("COMPOSIO_ENTITY_ID", "default")
@@ -30,10 +31,6 @@ COMPOSIO_CACHE_DIR: str = os.getenv(
 )
 
 # ── Model Names ───────────────────────────────────────────────────────────────
-# ADK agents use Gemini directly (native, no LiteLLM) — avoids routing/auth issues
-GEMINI_MODEL: str = os.getenv("GEMINI_MODEL", "gemini-2.0-flash")
-# Writer uses Qubrid via direct OpenAI-compatible client (no LiteLLM)
-WRITER_MODEL: str = "anthropic/claude-sonnet-4-6"
 
 # ── App Metadata ──────────────────────────────────────────────────────────────
 APP_NAME: str = "NewsletterAgent"

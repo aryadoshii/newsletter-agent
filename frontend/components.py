@@ -154,23 +154,27 @@ def render_input_panel() -> dict:
 # ── render_agent_stepper ──────────────────────────────────────────────────────
 
 STEP_DEFS = [
-    ("research_team",       "🔍 Research"),
-    ("content_filter",      "🎯 Filter"),
-    ("newsletter_writer",   "✍️ Write"),
-    ("html_formatter",      "🎨 Format"),
-    ("email_delivery",      "📮 Ready"),
-    ("done",                "✅ Done"),
+    ("research_team",     "🔍 Research",  "GPT-4.1 · DuckDuckGo"),
+    ("content_filter",    "🎯 Filter",    "GPT-4.1 via Qubrid"),
+    ("newsletter_writer", "✍️ Write",     "Claude Sonnet 3.5 via Qubrid"),
+    ("html_formatter",    "🎨 Format",    "Claude Sonnet 3.5 via Qubrid"),
+    ("email_delivery",    "📮 Ready",     "Composio"),
+    ("done",              "✅ Done",      ""),
 ]
 
 
 def render_agent_stepper(agent_statuses: dict) -> None:
-    """Render a 6-step horizontal pipeline stepper.
+    """Render a 6-step horizontal pipeline stepper with model names and progress bar.
 
     Args:
         agent_statuses: Maps agent_name → 'waiting' | 'running' | 'done' | 'error'.
     """
+    done_count = sum(1 for name, _, _ in STEP_DEFS if agent_statuses.get(name) == "done")
+    total_steps = len(STEP_DEFS) - 1  # exclude the final "done" marker
+    progress_pct = int((done_count / len(STEP_DEFS)) * 100)
+
     items_html = ""
-    for idx, (name, label) in enumerate(STEP_DEFS):
+    for idx, (name, label, model) in enumerate(STEP_DEFS):
         status = agent_statuses.get(name, "waiting")
 
         if status == "done":
@@ -186,6 +190,10 @@ def render_agent_stepper(agent_statuses: dict) -> None:
             dot_cls = "waiting"
             symbol = str(idx + 1)
 
+        model_html = (
+            f'<div class="step-model">{model}</div>' if model else ""
+        )
+
         connector_cls = "done" if status == "done" else ("running" if status == "running" else "")
         connector = (
             f'<div class="step-connector {connector_cls}"></div>'
@@ -197,12 +205,19 @@ def render_agent_stepper(agent_statuses: dict) -> None:
             f'<div class="step-item">'
             f'<div class="step-dot {dot_cls}">{symbol}</div>'
             f'<div class="step-label">{label}</div>'
+            f'{model_html}'
             f'</div>'
             f'{connector}'
         )
 
+    progress_bar_html = f"""
+    <div class="pipeline-progress-wrap">
+        <div class="pipeline-progress-bar" style="width:{progress_pct}%"></div>
+    </div>
+    """
+
     st.markdown(
-        f'<div class="stepper-container">{items_html}</div>',
+        f'<div class="stepper-container">{items_html}</div>{progress_bar_html}',
         unsafe_allow_html=True,
     )
 

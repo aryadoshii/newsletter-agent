@@ -245,6 +245,29 @@ button[kind="secondary"]:hover {
 .step-connector.running {
     background: linear-gradient(90deg, #2E7D32 0%, #F4A460 100%);
 }
+.step-model {
+    font-size: 0.62rem;
+    color: #A0522D;
+    text-align: center;
+    margin-top: 2px;
+    font-family: monospace;
+    opacity: 0.8;
+    white-space: nowrap;
+}
+.pipeline-progress-wrap {
+    width: 100%;
+    height: 5px;
+    background: #EAE0C8;
+    border-radius: 3px;
+    margin-top: 14px;
+    overflow: hidden;
+}
+.pipeline-progress-bar {
+    height: 100%;
+    background: linear-gradient(90deg, #2E7D32, #F4A460);
+    border-radius: 3px;
+    transition: width 0.5s ease;
+}
 
 /* ── Preview Box & Extras ────────────────────────────────────────────── */
 .preview-box {

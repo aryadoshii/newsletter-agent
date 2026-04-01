@@ -48,7 +48,7 @@ st.markdown(inject_styles(), unsafe_allow_html=True)
 DEFAULTS: dict = {
     "session_id": None,
     "messages": [],
-    "agent_statuses": {name: "waiting" for name, _ in STEP_DEFS},
+    "agent_statuses": {name: "waiting" for name, *_ in STEP_DEFS},
     "newsletter_html": None,
     "is_generating": False,
     "topic": "",
@@ -90,7 +90,7 @@ def _sync_agent_statuses(session_id: int) -> tuple[dict, str, list[dict]]:
         session = data.get("session", {})
         logs = data.get("agent_logs", [])
 
-        statuses: dict = {name: "waiting" for name, _ in STEP_DEFS}
+        statuses: dict = {name: "waiting" for name, *_ in STEP_DEFS}
         for log in logs:
             name = log.get("agent_name", "")
             status = log.get("status", "running")
@@ -208,7 +208,7 @@ if not st.session_state["is_generating"] and st.session_state["newsletter_html"]
         st.session_state["recipient"] = ""
         st.session_state["platform"] = "gmail"
         st.session_state["is_generating"] = True
-        st.session_state["agent_statuses"] = {name: "waiting" for name, _ in STEP_DEFS}
+        st.session_state["agent_statuses"] = {name: "waiting" for name, *_ in STEP_DEFS}
         st.session_state["messages"] = [
             {
                 "role": "user",
